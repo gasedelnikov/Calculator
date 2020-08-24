@@ -1,0 +1,46 @@
+<resources>
+    <string name="app_name">Calculator</string>
+    <string name="equals">=</string>
+    <string name="clear">Clear</string>
+    <string name="delete"><![CDATA[<=]]></string>
+
+    <string name="plusUI">+</string>
+    <string name="plusFormula">+</string>
+
+    <string name="minusUI">-</string>
+    <string name="minusFormula">-</string>
+
+    <string name="multiplyUI">*</string>
+    <string name="multiplyFormula">*</string>
+
+    <string name="divisionUI">/</string>
+    <string name="divisionFormula">/</string>
+
+    <string name="randomUI">random()</string>
+    <string name="randomFormula">random()</string>
+
+    <string name="sqrtUI">sqrt(x)</string>
+    <string name="sqrtFormula">sqrt()</string>
+
+    <string name="logUI">log(x)</string>
+    <string name="logFormula">log()</string>
+
+    <string name="expUI">exp(x)</string>
+    <string name="expFormula">exp()</string>
+
+    <string name="maxUI">max(x,y)</string>
+    <string name="maxFormula">max(, )</string>
+
+    <string name="minUI">min(x,y)</string>
+    <string name="minFormula">min(, )</string>
+
+    <string name="powUI">pow(x,y)</string>
+    <string name="powFormula">pow(, )</string>
+
+    <string name="log10UI">log10(x)</string>
+    <string name="log10Formula">log10()</string>
+
+    <string name="err">"Ошибка разбора формулы: "</string>
+    <string name="copy_to_clipboard">Copy to clipboard</string>
+    <string name="edtFormulaHint">Место для формулы</string>
+</resources>
