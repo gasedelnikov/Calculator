@@ -9,11 +9,14 @@ import android.os.Looper
 import android.util.Log
 import android.util.TypedValue
 import android.view.KeyEvent
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import org.apache.commons.jexl3.JexlBuilder
 import org.apache.commons.jexl3.JexlEngine
@@ -22,6 +25,7 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.reflect.KFunction
 import kotlin.reflect.full.functions
+import kotlin.system.exitProcess
 
 
 class MainActivity : View.OnKeyListener, View.OnClickListener, AppCompatActivity() {
@@ -45,6 +49,7 @@ class MainActivity : View.OnKeyListener, View.OnClickListener, AppCompatActivity
     var btnSqrt: Button? = null
     var btnPow: Button? = null
     var btnCopyToClipboard: Button? = null
+    var btnPasteFromClipboard: Button? = null
 
     private val mathFunctions: Collection<KFunction<*>> = Math::class.functions
     private var jexlEngine: JexlEngine = createEngine()
@@ -88,6 +93,7 @@ class MainActivity : View.OnKeyListener, View.OnClickListener, AppCompatActivity
         btnSqrt = findViewById(R.id.btnSqrt)
         btnPow = findViewById(R.id.btnPow)
         btnCopyToClipboard = findViewById(R.id.btnCopyToClipboard)
+        btnPasteFromClipboard = findViewById(R.id.btnPasteFromClipboard)
     }
 
     private fun setOnClickListenerToButtons() {
@@ -108,6 +114,7 @@ class MainActivity : View.OnKeyListener, View.OnClickListener, AppCompatActivity
         btnSqrt?.setOnClickListener(this)
         btnPow?.setOnClickListener(this)
         btnCopyToClipboard?.setOnClickListener(this)
+        btnPasteFromClipboard?.setOnClickListener(this)
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -117,7 +124,7 @@ class MainActivity : View.OnKeyListener, View.OnClickListener, AppCompatActivity
                 Handler(it).postDelayed({
                     val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
                     imm.showSoftInput(edtFormula, 0)
-                },0)
+                }, 0)
             }
         }
     }
@@ -134,73 +141,78 @@ class MainActivity : View.OnKeyListener, View.OnClickListener, AppCompatActivity
         return false
     }
 
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.menu, menu)
+        return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.mitExit -> closeApp()
+            R.id.mitFormulaCopy -> copyToClipboard(edtFormula?.text.toString())
+            R.id.mitFormulaPaste -> pasteFromClipboard()
+            R.id.mitFormulaClear -> clearFormula()
+            R.id.mitResultCopy -> copyToClipboard(txvResult?.text.toString())
+            R.id.mitResultClear -> clearResult()
+            R.id.mitClear -> clear()
+        }
+
+        Toast.makeText(this, item.getTitle(), Toast.LENGTH_SHORT).show()
+        return super.onOptionsItemSelected(item)
+    }
+
     override fun onClick(v: View?) {
         if (v != null) {
             val button: Button = findViewById(v.id)
             Log.d(tag, "onClick; button.text = " + button.text)
             when (v.id) {
-                R.id.btnExp -> {
-                    addOperation(resources.getString(R.string.expFormula), 4)
-                }
-                R.id.btnLog -> {
-                    addOperation(resources.getString(R.string.logFormula), 4)
-                }
-                R.id.btnLog10 -> {
-                    addOperation(resources.getString(R.string.log10Formula), 6)
-                }
-                R.id.btnMax -> {
-                    addOperation(resources.getString(R.string.maxFormula), 4)
-                }
-                R.id.btnMin -> {
-                    addOperation(resources.getString(R.string.minFormula), 4)
-                }
-                R.id.btnRandom -> {
-                    addOperation(resources.getString(R.string.randomFormula), 7)
-                }
-                R.id.btnSqrt -> {
-                    addOperation(resources.getString(R.string.sqrtFormula), 5)
-                }
-                R.id.btnPow -> {
-                    addOperation(resources.getString(R.string.powFormula), 4)
-                }
-                R.id.btnPlus -> {
-                    addOperation(resources.getString(R.string.plusFormula), 1)
-                }
-                R.id.btnMinus -> {
-                    addOperation(resources.getString(R.string.minusFormula), 1)
-                }
-                R.id.btnDivision -> {
-                    addOperation(resources.getString(R.string.divisionFormula), 1)
-                }
-                R.id.btnMultiply -> {
-                    addOperation(resources.getString(R.string.multiplyFormula), 1)
-                }
-                R.id.btnClear -> {
-                    clear()
-                }
-                R.id.btnDelete -> {
-                    delete()
-                }
-                R.id.btnCalculate -> {
-                    calculateFormula()
-                }
-                R.id.btnCopyToClipboard -> {
-                    copyToClipboard()
-                }
-
+                R.id.btnExp -> addOperation(resources.getString(R.string.expFormula), 4)
+                R.id.btnLog -> addOperation(resources.getString(R.string.logFormula), 4)
+                R.id.btnLog10 -> addOperation(resources.getString(R.string.log10Formula), 6)
+                R.id.btnMax -> addOperation(resources.getString(R.string.maxFormula), 4)
+                R.id.btnMin -> addOperation(resources.getString(R.string.minFormula), 4)
+                R.id.btnRandom -> addOperation(resources.getString(R.string.randomFormula), 8)
+                R.id.btnSqrt -> addOperation(resources.getString(R.string.sqrtFormula), 5)
+                R.id.btnPow -> addOperation(resources.getString(R.string.powFormula), 4)
+                R.id.btnPlus -> addOperation(resources.getString(R.string.plusFormula), 1)
+                R.id.btnMinus -> addOperation(resources.getString(R.string.minusFormula), 1)
+                R.id.btnDivision -> addOperation(resources.getString(R.string.divisionFormula), 1)
+                R.id.btnMultiply -> addOperation(resources.getString(R.string.multiplyFormula), 1)
+                R.id.btnClear -> clear()
+                R.id.btnDelete -> delete()
+                R.id.btnCalculate -> calculateFormula()
+                R.id.btnCopyToClipboard -> copyToClipboard(txvResult?.text.toString())
+                R.id.btnPasteFromClipboard -> pasteFromClipboard()
             }
         }
     }
 
-    private fun copyToClipboard() {
-        val text = txvResult?.text.toString()
+    private fun pasteFromClipboard() {
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val clip = ClipData.newPlainText("label", text)
+        val data: ClipData? = clipboard.getPrimaryClip()
+        val item = data?.getItemAt(0)
+
+        val text = item?.text.toString() // ?: "";
+        addOperation(text, text.length)
+    }
+
+    private fun copyToClipboard(text: String?) {
+//        val text = txvResult?.text.toString()
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = ClipData.newPlainText("label", text ?: "")
         clipboard.setPrimaryClip(clip);
     }
 
     private fun clear() {
+        clearFormula()
+        clearResult()
+    }
+
+    private fun clearFormula() {
         edtFormula?.setText("")
+    }
+
+    private fun clearResult() {
         txvResult?.text = ""
     }
 
@@ -270,6 +282,11 @@ class MainActivity : View.OnKeyListener, View.OnClickListener, AppCompatActivity
 //                Toast.makeText(this, errTextPrefix + errMessage, Toast.LENGTH_LONG).show();
             }
         }
+    }
+
+    private fun closeApp() {
+        this@MainActivity.finish()
+        exitProcess(0)
     }
 
 }

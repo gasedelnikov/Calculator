@@ -23,6 +23,16 @@
             android:textAllCaps="false" />
 
         <Button
+            android:id="@+id/btnPasteFromClipboard"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="2pt"
+            android:layout_marginRight="2pt"
+            android:layout_weight="1"
+            android:text="@string/paste_from_clipboard"
+            android:textAllCaps="false"/>
+
+        <Button
             android:id="@+id/btnClear"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

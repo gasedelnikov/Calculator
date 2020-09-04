@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/msmFormula"
+        android:orderInCategory="1"
+        android:title="Formula">
+        <menu >
+            <item
+                android:id="@+id/mitFormulaCopy"
+                android:title="@string/copy_to_clipboard" />
+            <item
+                android:id="@+id/mitFormulaPaste"
+                android:title="@string/paste_from_clipboard" />
+            <item
+                android:id="@+id/mitFormulaClear"
+                android:title=" @string/clear" />
+        </menu>
+    </item>
+    <item
+        android:id="@+id/msmResult"
+        android:title="Result">
+        <menu>
+            <item
+                android:id="@+id/mitResultCopy"
+                android:title="@string/copy_to_clipboard" />
+            <item
+                android:id="@+id/mitResultClear"
+                android:title="@string/clear" />
+        </menu>
+    </item>
+    <item
+        android:id="@+id/mitClear"
+        android:orderInCategory="3"
+        android:title="@string/clear"></item>
+    <item
+        android:id="@+id/mitExit"
+        android:orderInCategory="4"
+        android:title="exit"></item>
+</menu>

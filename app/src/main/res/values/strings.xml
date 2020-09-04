@@ -41,6 +41,7 @@
     <string name="log10Formula">log10()</string>
 
     <string name="err">"Ошибка разбора формулы: "</string>
-    <string name="copy_to_clipboard">Copy to clipboard</string>
+    <string name="copy_to_clipboard">Copy</string>
+    <string name="paste_from_clipboard">Paste</string>
     <string name="edtFormulaHint">Место для формулы</string>
 </resources>
