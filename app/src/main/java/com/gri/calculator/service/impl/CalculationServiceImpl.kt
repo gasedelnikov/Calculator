@@ -10,7 +10,7 @@ import org.apache.commons.jexl3.JexlException
 import kotlin.reflect.KFunction
 import kotlin.reflect.full.functions
 
-class CalculationServiceImpl :CalculationService{
+class CalculationServiceImpl : CalculationService {
     private val tag = "CalculationService"
 
     private val mathFunctions: Collection<KFunction<*>> = Math::class.functions
@@ -22,33 +22,34 @@ class CalculationServiceImpl :CalculationService{
         jexlEngine = JexlBuilder().namespaces(ns).create()
     }
 
-    private fun getElContext(mapContext: LinkedHashMap<String, Any>?): JexlContext {
-        val context: LinkedHashMap<String, Any> = LinkedHashMap();
+    private fun getElContext(context: List<Pair<String, Any>>?): JexlContext {
+        val resultContext: MutableMap<String, Any> = HashMap();
 
-        if (mapContext != null) {
-            mapContext.forEach { (name, value) ->
-                run {
-                    if (name != "" && value != "") {
-                        try {
-                            val newValue = calculate(context, value.toString())
-                            context[name] = newValue.toInt()
-                        }
-                        catch (ex: NumberFormatException) { }
-                        catch (ex: CalculationException) { }
+        if (context != null) {
+            for (i in context.indices) {
+                val name = context[i].first
+                val value = context[i].second
+                if (name != "" && value != "") {
+                    val newValue = calculate(MapContext(resultContext), value.toString(), i+1)
+                    try {
+                        resultContext[name] = newValue.toDouble()
+                    } catch (ex: NumberFormatException) {
+                        resultContext[name] = newValue
                     }
                 }
             }
         }
-
-        return MapContext(context)
+        return MapContext(resultContext)
     }
 
     @Throws(CalculationException::class)
-    override fun calculate(mapContext: LinkedHashMap<String, Any>?, formula: String): String {
+    override fun calculate(mapContext: List<Pair<String, Any>>?, formula: String): String {
         val jexlContext: JexlContext = getElContext(mapContext)
+        return calculate(jexlContext, formula, 0)
+    }
 
+    private fun prepareFormula(formula: String): String {
         var formulaEdt: String = formula
-        var result = ""
 
         mathFunctions.stream()
             .map { kFunction -> kFunction.name }
@@ -57,38 +58,35 @@ class CalculationServiceImpl :CalculationService{
                 formulaEdt = formulaEdt.replace("$funcName(", "Math:$funcName(")
             }
 
+        return formulaEdt;
+    }
+
+    @Throws(CalculationException::class)
+    private fun calculate(jexlContext: JexlContext?, formula: String, objIndex : Int): String {
+        var result = ""
+
         if (formula != "") {
+            val preparedFormula = prepareFormula(formula)
             try {
-                result = jexlEngine.createExpression(formulaEdt)?.evaluate(jexlContext).toString();
+                result =
+                    jexlEngine.createExpression(preparedFormula)?.evaluate(jexlContext).toString()
             } catch (e: JexlException) {
                 val err = e.message.toString()
 //                Log.d(tag, err)
                 val errIndexText = err.substringAfter("@1:").substringBefore(" ")
                 val errMessage = err.substringAfter("@1:").substringAfter(" ")
 
-//                var originFormulaErrIndex = -1
-//                try {
-//                    val errIndex = errIndexText.toInt()
-//                    if (errIndex > 0) {
-//                        originFormulaErrIndex = formula.substring(0, errIndex - 1).length
-//                    }
-//                } catch (ex: java.lang.NumberFormatException) {
-//                }
-
-                val originFormulaErrIndex = try {
-                    formula.substring(0, errIndexText.toInt() - 1).length
+                val errIndex = try {
+                    errIndexText.toInt()
                 } catch (ex: java.lang.NumberFormatException) {
                     -1
                 }
-
-                throw CalculationException(
-                    errMessage,
-                    originFormulaErrIndex
-                )
+                val formulaSubstring = preparedFormula.substring(0, errIndex - 1)
+                val originFormulaErrIndex = formulaSubstring.replace("Math:", "").length
+                throw CalculationException(errMessage, originFormulaErrIndex, objIndex)
             }
         }
         return result
     }
-
 
 }

@@ -8,38 +8,32 @@ import org.junit.Assert.assertEquals
 import kotlin.math.pow
 
 class CalculationServiceImplTest {
-    private val assertDelta = 1.0e-12
+    private val aDelta = 1.0e-12
+    private val eleven = 11.0
 
     @Test
     fun calculationService_calculateNoContext_correct() {
         val calc = CalculationServiceImpl();
 
-        assertEquals(11, calc.calculate(null, "11").toInt())
-        assertEquals(11 * 11, calc.calculate(null, "11*11").toInt())
-        assertEquals(11.0.pow(2.0), calc.calculate(null, "pow(11,2)").toDouble(), assertDelta)
+        assertEquals(eleven, calc.calculate(null, "11").toDouble(), aDelta)
+        assertEquals(eleven.pow(2), calc.calculate(null, "11*11").toDouble(), aDelta)
+        assertEquals(eleven.pow(2), calc.calculate(null, "pow(11,2)").toDouble(), aDelta)
     }
 
     @Test
     fun calculationService_calculateWithContext_correct() {
         val calc = CalculationServiceImpl();
 
-        val contextMap: LinkedHashMap<String, Any> = LinkedHashMap();
-        contextMap["v1"] = 11
-        contextMap["v2"] = "v1*v1"
-        contextMap["v3"] = "v2*v1"
-        contextMap["v4"] = 2
+        val context =
+            arrayListOf(Pair("v1", 11), Pair("v2", "v1*v1"), Pair("v3", "v2*v1"), Pair("v4", 2))
 
-        assertEquals(11, calc.calculate(contextMap, "v1").toInt())
-        assertEquals(11 * 11, calc.calculate(contextMap, "v2").toInt())
-        assertEquals(11 * 11 * 11, calc.calculate(contextMap, "v3").toInt())
+        assertEquals(eleven, calc.calculate(context, "v1").toDouble(), aDelta)
+        assertEquals(eleven.pow(2), calc.calculate(context, "v2").toDouble(), aDelta)
+        assertEquals(eleven.pow(3), calc.calculate(context, "v3").toDouble(), aDelta)
 
-        assertEquals(11 * 11, calc.calculate(contextMap, "v1*v1").toInt())
+        assertEquals(eleven.pow(2), calc.calculate(context, "v1*v1").toDouble(), aDelta)
 
-        assertEquals(
-            11.0.pow(2.0),
-            calc.calculate(contextMap, "pow(v1,v4)").toDouble(),
-            assertDelta
-        )
+        assertEquals(eleven.pow(2), calc.calculate(context, "pow(v1,v4)").toDouble(), aDelta)
     }
 
     @Test
@@ -50,7 +44,8 @@ class CalculationServiceImplTest {
             calc.calculate(null, "y")
         } catch (ex: CalculationException) {
             assertEquals("undefined variable y", ex.errMessage)
-            assertEquals(0, ex.errIndex)
+            assertEquals(0, ex.errFormulaPosition)
+            assertEquals(0, ex.objIndex)
         }
 
         val formula = "1234567+y";
@@ -58,49 +53,79 @@ class CalculationServiceImplTest {
             calc.calculate(null, formula)
         } catch (ex: CalculationException) {
             assertEquals("undefined variable y", ex.errMessage)
-            assertEquals(formula.length - 1, ex.errIndex)
+            assertEquals(formula.length - 1, ex.errFormulaPosition)
+            assertEquals(0, ex.objIndex)
         }
 
         try {
-            calc.calculate(null, formula + "+1234")
+            calc.calculate(null, "$formula+1234")
         } catch (ex: CalculationException) {
             assertEquals("undefined variable y", ex.errMessage)
-            assertEquals(formula.length - 1, ex.errIndex)
+            assertEquals(formula.length - 1, ex.errFormulaPosition)
+            assertEquals(0, ex.objIndex)
         }
-
     }
 
     @Test
     fun calculationService_calculateWithContext_exception() {
         val calc = CalculationServiceImpl();
 
-        val contextMap: LinkedHashMap<String, Any> = LinkedHashMap();
-        contextMap["v2"] = "v1*v1"
-        contextMap["v1"] = 11
+        var context = arrayListOf(Pair("v2", "v1*v1"), Pair("v1", 11))
 
         try {
-            val result = calc.calculate(contextMap, "v2")
+            val result = calc.calculate(context, "v2")
             assertNull(result)
         } catch (ex: CalculationException) {
-            assertEquals("undefined variable v2", ex.errMessage)
-            assertEquals(0, ex.errIndex)
+            assertEquals("undefined variable v1", ex.errMessage)
+            assertEquals(0, ex.errFormulaPosition)
+            assertEquals(1, ex.objIndex)
         }
 
         val formula = "1234567+v2";
         try {
-            val result = calc.calculate(contextMap, formula)
+            val result = calc.calculate(context, formula)
             assertNull(result)
         } catch (ex: CalculationException) {
-            assertEquals("undefined variable v2", ex.errMessage)
-            assertEquals(formula.length - 2, ex.errIndex)
+            assertEquals("undefined variable v1", ex.errMessage)
+            assertEquals(0, ex.errFormulaPosition)
+            assertEquals(1, ex.objIndex)
         }
 
+        context = arrayListOf(Pair("v0", "11"), Pair("v2", "v1*v1"), Pair("v1", 11))
         try {
-            val result = calc.calculate(contextMap, formula + " + 1234")
+            val result = calc.calculate(context, "$formula + 1234")
             assertNull(result)
         } catch (ex: CalculationException) {
-            assertEquals("undefined variable v2", ex.errMessage)
-            assertEquals(formula.length - 2, ex.errIndex)
+            assertEquals("undefined variable v1", ex.errMessage)
+            assertEquals(0, ex.errFormulaPosition)
+            assertEquals(2, ex.objIndex)
+        }
+    }
+
+    @Test
+    fun calculationService_calculateVars_correct() {
+        val calc = CalculationServiceImpl();
+
+        val context = arrayListOf(Pair("v2", 11), Pair("v1", "v2*v2"), Pair("v3", "exp(v2)"))
+
+        assertEquals(eleven, calc.calculate(context, "v2").toDouble(), aDelta)
+        assertEquals(eleven.pow(2), calc.calculate(context, "v1").toDouble(), aDelta)
+        assertEquals(Math.exp(11.0), calc.calculate(context, "v3").toDouble(), aDelta)
+    }
+
+    @Test
+    fun calculationService_calculateVars_exception() {
+        val calc = CalculationServiceImpl();
+
+        val context = arrayListOf(Pair("v2", 11), Pair("v1", "v2*v2"), Pair("v3", "exp(v22)"))
+
+        try {
+            val result = calc.calculate(context, "v3")
+            assertNull(result)
+        } catch (ex: CalculationException) {
+            assertEquals("undefined variable v22", ex.errMessage)
+            assertEquals(4, ex.errFormulaPosition)
+            assertEquals(3, ex.objIndex)
         }
     }
 }

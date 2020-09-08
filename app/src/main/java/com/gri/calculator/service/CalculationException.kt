@@ -1,6 +1,7 @@
 package com.gri.calculator.service
 
-class CalculationException(_errMessage: String, _errIndex : Int) :Exception(){
+class CalculationException(_errMessage: String, _errFormulaPosition : Int, _objIndex : Int) :Exception(){
     val errMessage: String = _errMessage
-    val errIndex : Int = _errIndex
+    val errFormulaPosition : Int = _errFormulaPosition
+    val objIndex : Int = _objIndex
 }

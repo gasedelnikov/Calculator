@@ -50,15 +50,7 @@ class MainActivity : View.OnKeyListener, View.OnClickListener, AppCompatActivity
     var btnPasteFromClipboard: Button? = null
 
     private val variableContainers: MutableMap<Int, Pair<EditText, EditText>> = HashMap();
-//    private val mathFunctions: Collection<KFunction<*>> = Math::class.functions
-//    private var jexlEngine: JexlEngine = createEngine()
     private var calculationService: CalculationService = CalculationServiceImpl()
-
-//    private fun createEngine(): JexlEngine {
-//        val ns: MutableMap<String, Any> = HashMap()
-//        ns["Math"] = Math::class.java
-//        return JexlBuilder().namespaces(ns).create()
-//    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -265,8 +257,8 @@ class MainActivity : View.OnKeyListener, View.OnClickListener, AppCompatActivity
                 txvResult?.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20.0F)
                 txvResult?.setText(res?.toString())
             } catch (ex: CalculationException) {
-                if (ex.errIndex >= 0) {
-                    edtFormula?.setSelection(ex.errIndex, ex.errIndex)
+                if (ex.errFormulaPosition >= 0) {
+                    edtFormula?.setSelection(ex.errFormulaPosition, ex.errFormulaPosition)
                 }
 
                 txvResult?.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15.0F)
@@ -276,15 +268,15 @@ class MainActivity : View.OnKeyListener, View.OnClickListener, AppCompatActivity
         }
     }
 
-    private fun getContext(): LinkedHashMap<String, Any> {
-        val context: LinkedHashMap<String, Any> = LinkedHashMap();
+    private fun getContext(): List<Pair<String, Any>> {
+        val context: MutableList<Pair<String, Any>> = ArrayList()
 
         variableContainers.forEach { (index, pair) ->
             run {
                 val name = pair.first.text.toString()
                 val value = pair.second.text.toString()
                 if (name != "" && value != "") {
-                        context[name] = value
+                    context.add(Pair(name, value))
                 }
             }
         }
