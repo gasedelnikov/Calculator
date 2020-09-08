@@ -13,14 +13,12 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.inputmethod.InputMethodManager
-import android.widget.Button
-import android.widget.EditText
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import org.apache.commons.jexl3.JexlBuilder
-import org.apache.commons.jexl3.JexlEngine
-import org.apache.commons.jexl3.JexlException
+import com.gri.calculator.service.CalculationException
+import com.gri.calculator.service.CalculationService
+import com.gri.calculator.service.impl.CalculationServiceImpl
+import org.apache.commons.jexl3.*
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.reflect.KFunction
@@ -39,7 +37,7 @@ class MainActivity : View.OnKeyListener, View.OnClickListener, AppCompatActivity
     var btnDivision: Button? = null
     var btnCalculate: Button? = null
     var btnClear: Button? = null
-    var btnDelete: Button? = null
+    var btnDelete: ImageButton? = null
     var btnExp: Button? = null
     var btnLog: Button? = null
     var btnLog10: Button? = null
@@ -51,14 +49,16 @@ class MainActivity : View.OnKeyListener, View.OnClickListener, AppCompatActivity
     var btnCopyToClipboard: Button? = null
     var btnPasteFromClipboard: Button? = null
 
-    private val mathFunctions: Collection<KFunction<*>> = Math::class.functions
-    private var jexlEngine: JexlEngine = createEngine()
+    private val variableContainers: MutableMap<Int, Pair<EditText, EditText>> = HashMap();
+//    private val mathFunctions: Collection<KFunction<*>> = Math::class.functions
+//    private var jexlEngine: JexlEngine = createEngine()
+    private var calculationService: CalculationService = CalculationServiceImpl()
 
-    private fun createEngine(): JexlEngine {
-        val ns: MutableMap<String, Any> = HashMap()
-        ns["Math"] = Math::class.java
-        return JexlBuilder().namespaces(ns).create()
-    }
+//    private fun createEngine(): JexlEngine {
+//        val ns: MutableMap<String, Any> = HashMap()
+//        ns["Math"] = Math::class.java
+//        return JexlBuilder().namespaces(ns).create()
+//    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,7 +66,8 @@ class MainActivity : View.OnKeyListener, View.OnClickListener, AppCompatActivity
 
         findViews()
         setOnClickListenerToButtons()
-        createEngine()
+//        createEngine()
+        initVariables()
 
         edtFormula?.setOnKeyListener(this)
         edtFormula?.requestFocus()
@@ -117,6 +118,15 @@ class MainActivity : View.OnKeyListener, View.OnClickListener, AppCompatActivity
         btnPasteFromClipboard?.setOnClickListener(this)
     }
 
+    private fun initVariables() {
+        variableContainers[0] =
+            Pair(findViewById(R.id.edtVarName1), findViewById(R.id.edtVarValue1))
+        variableContainers[1] =
+            Pair(findViewById(R.id.edtVarName2), findViewById(R.id.edtVarValue2))
+        variableContainers[2] =
+            Pair(findViewById(R.id.edtVarName3), findViewById(R.id.edtVarValue3))
+    }
+
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) {
@@ -163,8 +173,8 @@ class MainActivity : View.OnKeyListener, View.OnClickListener, AppCompatActivity
 
     override fun onClick(v: View?) {
         if (v != null) {
-            val button: Button = findViewById(v.id)
-            Log.d(tag, "onClick; button.text = " + button.text)
+//            val button: Button = findViewById(v.id)
+//            Log.d(tag, "onClick; button.text = " + button.text)
             when (v.id) {
                 R.id.btnExp -> addOperation(resources.getString(R.string.expFormula), 4)
                 R.id.btnLog -> addOperation(resources.getString(R.string.logFormula), 4)
@@ -247,41 +257,39 @@ class MainActivity : View.OnKeyListener, View.OnClickListener, AppCompatActivity
     }
 
     private fun calculateFormula() {
-        var formula: String = edtFormula?.text.toString()
-        mathFunctions.stream()
-            .map { kFunction -> kFunction.name }
-            .distinct()
-            .forEach { funcName -> formula = formula.replace("$funcName(", "Math:$funcName(") }
+        val formula: String = edtFormula?.text.toString()
 
         if (formula != "") {
             try {
-                val res: Any? = jexlEngine.createExpression(formula)?.evaluate(null);
+                val res: Any? = calculationService.calculate(getContext(), formula)
                 txvResult?.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20.0F)
                 txvResult?.setText(res?.toString())
-            } catch (e: JexlException) {
-                val err = e.message.toString()
-                Log.d(tag, err)
-                val errTextPrefix = resources.getString(R.string.err)
-                val errIndexText = err.substringAfter("@1:").substringBefore(" ")
-                val errMessage = err.substringAfter("@1:").substringAfter(" ")
-
-                try {
-                    val errIndex = errIndexText.toInt()
-                    if (errIndex > 0) {
-                        val originFormulaSubstring = formula.substring(0, errIndex - 1)
-                        val originFormulaErrIndex =
-                            originFormulaSubstring.replace("Math:", "").length
-                        if (originFormulaErrIndex >= 0 && originFormulaErrIndex < edtFormula?.text.toString().length) {
-                            edtFormula?.setSelection(originFormulaErrIndex, originFormulaErrIndex)
-                        }
-                    }
-                } catch (ex: java.lang.NumberFormatException) {
+            } catch (ex: CalculationException) {
+                if (ex.errIndex >= 0) {
+                    edtFormula?.setSelection(ex.errIndex, ex.errIndex)
                 }
+
                 txvResult?.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15.0F)
-                txvResult?.text = errTextPrefix + errMessage
+                txvResult?.text = resources.getString(R.string.err) + ex.errMessage
 //                Toast.makeText(this, errTextPrefix + errMessage, Toast.LENGTH_LONG).show();
             }
         }
+    }
+
+    private fun getContext(): LinkedHashMap<String, Any> {
+        val context: LinkedHashMap<String, Any> = LinkedHashMap();
+
+        variableContainers.forEach { (index, pair) ->
+            run {
+                val name = pair.first.text.toString()
+                val value = pair.second.text.toString()
+                if (name != "" && value != "") {
+                        context[name] = value
+                }
+            }
+        }
+
+        return context
     }
 
     private fun closeApp() {
