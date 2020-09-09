@@ -1,5 +1,6 @@
 package com.gri.calculator.service.impl
 
+import com.gri.calculator.service.CalculationErrorPlace
 import com.gri.calculator.service.CalculationException
 import com.gri.calculator.service.CalculationService
 import org.apache.commons.jexl3.JexlEngine
@@ -30,7 +31,7 @@ class CalculationServiceImpl : CalculationService {
                 val name = context[i].first
                 val value = context[i].second
                 if (name != "" && value != "") {
-                    val newValue = calculate(MapContext(resultContext), value.toString(), i+1)
+                    val newValue = calculate(MapContext(resultContext), value.toString(), CalculationErrorPlace.CONTEXT, i)
                     try {
                         resultContext[name] = newValue.toDouble()
                     } catch (ex: NumberFormatException) {
@@ -45,7 +46,7 @@ class CalculationServiceImpl : CalculationService {
     @Throws(CalculationException::class)
     override fun calculate(mapContext: List<Pair<String, Any>>?, formula: String): String {
         val jexlContext: JexlContext = getElContext(mapContext)
-        return calculate(jexlContext, formula, 0)
+        return calculate(jexlContext, formula, CalculationErrorPlace.FORMULA, 0)
     }
 
     private fun prepareFormula(formula: String): String {
@@ -62,7 +63,12 @@ class CalculationServiceImpl : CalculationService {
     }
 
     @Throws(CalculationException::class)
-    private fun calculate(jexlContext: JexlContext?, formula: String, objIndex : Int): String {
+    private fun calculate(
+        jexlContext: JexlContext?,
+        formula: String,
+        errorPlace: CalculationErrorPlace,
+        objIndex: Int
+    ): String {
         var result = ""
 
         if (formula != "") {
@@ -83,7 +89,7 @@ class CalculationServiceImpl : CalculationService {
                 }
                 val formulaSubstring = preparedFormula.substring(0, errIndex - 1)
                 val originFormulaErrIndex = formulaSubstring.replace("Math:", "").length
-                throw CalculationException(errMessage, originFormulaErrIndex, objIndex)
+                throw CalculationException(errMessage, errorPlace, objIndex, originFormulaErrIndex)
             }
         }
         return result

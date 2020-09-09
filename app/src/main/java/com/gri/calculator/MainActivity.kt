@@ -15,6 +15,7 @@ import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import com.gri.calculator.service.CalculationErrorPlace
 import com.gri.calculator.service.CalculationException
 import com.gri.calculator.service.CalculationService
 import com.gri.calculator.service.impl.CalculationServiceImpl
@@ -58,8 +59,9 @@ class MainActivity : View.OnKeyListener, View.OnClickListener, AppCompatActivity
 
         findViews()
         setOnClickListenerToButtons()
-//        createEngine()
         initVariables()
+
+        setStartValues()
 
         edtFormula?.setOnKeyListener(this)
         edtFormula?.requestFocus()
@@ -87,6 +89,18 @@ class MainActivity : View.OnKeyListener, View.OnClickListener, AppCompatActivity
         btnPow = findViewById(R.id.btnPow)
         btnCopyToClipboard = findViewById(R.id.btnCopyToClipboard)
         btnPasteFromClipboard = findViewById(R.id.btnPasteFromClipboard)
+    }
+
+    private fun setStartValues(){
+        edtFormula?.setText("11 + v1 + exp(v2)")
+        edtFormula?.setText("11 + v1 + exp(v2)")
+
+        (findViewById<EditText>(R.id.edtVarName1)).setText("v1")
+        (findViewById<EditText>(R.id.edtVarValue1)).setText("11")
+        (findViewById<EditText>(R.id.edtVarName2)).setText("v2")
+        (findViewById<EditText>(R.id.edtVarValue2)).setText("v1*v1")
+        (findViewById<EditText>(R.id.edtVarName3)).setText("v3")
+        (findViewById<EditText>(R.id.edtVarValue3)).setText("exp(v33)")
     }
 
     private fun setOnClickListenerToButtons() {
@@ -212,6 +226,13 @@ class MainActivity : View.OnKeyListener, View.OnClickListener, AppCompatActivity
 
     private fun clearFormula() {
         edtFormula?.setText("")
+
+        variableContainers.forEach { (index, pair) ->
+            run {
+                val name = pair.first.setText("")
+                val value = pair.second.setText("")
+            }
+        }
     }
 
     private fun clearResult() {
@@ -257,13 +278,32 @@ class MainActivity : View.OnKeyListener, View.OnClickListener, AppCompatActivity
                 txvResult?.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20.0F)
                 txvResult?.setText(res?.toString())
             } catch (ex: CalculationException) {
-                if (ex.errFormulaPosition >= 0) {
-                    edtFormula?.setSelection(ex.errFormulaPosition, ex.errFormulaPosition)
-                }
+                showFormulaError(ex)
+            }
+        }
+    }
 
-                txvResult?.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15.0F)
-                txvResult?.text = resources.getString(R.string.err) + ex.errMessage
-//                Toast.makeText(this, errTextPrefix + errMessage, Toast.LENGTH_LONG).show();
+    private fun showFormulaError(ex: CalculationException){
+        val editText: EditText?
+        val errMessage: String?
+
+        when (ex.calculationErrorPlace) {
+            CalculationErrorPlace.CONTEXT -> {
+                errMessage = resources.getString(R.string.err) + ex.errMessage
+                editText = variableContainers[ex.objIndex]?.second
+            }
+            CalculationErrorPlace.FORMULA -> {
+                errMessage = resources.getString(R.string.err) + ex.errMessage
+                editText = edtFormula
+            }
+        }
+
+        if (errMessage != "") {
+            txvResult?.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15.0F)
+            txvResult?.text = errMessage
+            if (editText?.text != null  && ex.errFormulaPosition >= 0 && ex.errFormulaPosition < editText.text.length) {
+                editText.requestFocus()
+                editText.setSelection(ex.errFormulaPosition, ex.errFormulaPosition)
             }
         }
     }

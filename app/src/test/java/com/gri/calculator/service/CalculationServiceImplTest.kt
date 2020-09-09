@@ -44,6 +44,7 @@ class CalculationServiceImplTest {
             calc.calculate(null, "y")
         } catch (ex: CalculationException) {
             assertEquals("undefined variable y", ex.errMessage)
+            assertEquals(CalculationErrorPlace.FORMULA, ex.calculationErrorPlace)
             assertEquals(0, ex.errFormulaPosition)
             assertEquals(0, ex.objIndex)
         }
@@ -53,6 +54,7 @@ class CalculationServiceImplTest {
             calc.calculate(null, formula)
         } catch (ex: CalculationException) {
             assertEquals("undefined variable y", ex.errMessage)
+            assertEquals(CalculationErrorPlace.FORMULA, ex.calculationErrorPlace)
             assertEquals(formula.length - 1, ex.errFormulaPosition)
             assertEquals(0, ex.objIndex)
         }
@@ -61,6 +63,7 @@ class CalculationServiceImplTest {
             calc.calculate(null, "$formula+1234")
         } catch (ex: CalculationException) {
             assertEquals("undefined variable y", ex.errMessage)
+            assertEquals(CalculationErrorPlace.FORMULA, ex.calculationErrorPlace)
             assertEquals(formula.length - 1, ex.errFormulaPosition)
             assertEquals(0, ex.objIndex)
         }
@@ -77,8 +80,9 @@ class CalculationServiceImplTest {
             assertNull(result)
         } catch (ex: CalculationException) {
             assertEquals("undefined variable v1", ex.errMessage)
+            assertEquals(CalculationErrorPlace.CONTEXT, ex.calculationErrorPlace)
             assertEquals(0, ex.errFormulaPosition)
-            assertEquals(1, ex.objIndex)
+            assertEquals(0, ex.objIndex)
         }
 
         val formula = "1234567+v2";
@@ -87,8 +91,9 @@ class CalculationServiceImplTest {
             assertNull(result)
         } catch (ex: CalculationException) {
             assertEquals("undefined variable v1", ex.errMessage)
+            assertEquals(CalculationErrorPlace.CONTEXT, ex.calculationErrorPlace)
             assertEquals(0, ex.errFormulaPosition)
-            assertEquals(1, ex.objIndex)
+            assertEquals(0, ex.objIndex)
         }
 
         context = arrayListOf(Pair("v0", "11"), Pair("v2", "v1*v1"), Pair("v1", 11))
@@ -97,8 +102,9 @@ class CalculationServiceImplTest {
             assertNull(result)
         } catch (ex: CalculationException) {
             assertEquals("undefined variable v1", ex.errMessage)
+            assertEquals(CalculationErrorPlace.CONTEXT, ex.calculationErrorPlace)
             assertEquals(0, ex.errFormulaPosition)
-            assertEquals(2, ex.objIndex)
+            assertEquals(1, ex.objIndex)
         }
     }
 
@@ -124,8 +130,9 @@ class CalculationServiceImplTest {
             assertNull(result)
         } catch (ex: CalculationException) {
             assertEquals("undefined variable v22", ex.errMessage)
+            assertEquals(CalculationErrorPlace.CONTEXT, ex.calculationErrorPlace)
             assertEquals(4, ex.errFormulaPosition)
-            assertEquals(3, ex.objIndex)
+            assertEquals(2, ex.objIndex)
         }
     }
 }
